@@ -1,0 +1,199 @@
+Act as a senior Android application architect and EV mobility domain expert. Design a complete Android application with proper UI flow, backend logic, APIs, data models, and algorithms.
+
+🧠 Application Overview
+
+Build an Electric Vehicle (EV) Charging Station Recommendation Android Application that helps EV users plan trips intelligently by recommending charging stations based on battery State of Charge (SOC), vehicle mileage, and route distance.
+
+The app should support user authentication, vehicle-specific configurations, real-time route planning, and automatic + manual EV charging station stops.
+
+🔐 Authentication Module
+1️⃣ Login Page
+
+Email / Phone Number
+
+Password
+
+Login Button
+
+Forgot Password
+
+Validation and error handling
+
+Secure authentication (Firebase/Auth API)
+
+2️⃣ Signup Page
+
+During signup, collect:
+
+Name
+
+Email / Phone Number
+
+Password
+
+EV Car Model (dropdown or searchable list)
+
+Maximum Mileage of the EV (in km)
+
+Battery Capacity (kWh – optional)
+
+Submit & Create Account
+
+Store all user and vehicle details in a backend database.
+
+🚗 Home / Dashboard Screen (After Login)
+Display User & Vehicle Information
+
+EV Car Model
+
+Battery State of Charge (SOC %) (mock or real-time API)
+
+Estimated Remaining Range (km) calculated as:
+
+Remaining Range = (Current SOC % / 100) × Max Mileage
+
+
+Estimated Time to Full Charge
+
+Charging Speed (fast/normal – optional)
+
+Account Info (Profile, Logout)
+
+🗺️ Map & Navigation Module (Second Page)
+Features:
+
+Google Maps integration
+
+Current location detection
+
+Search bar with two options:
+
+🔍 Enter destination address (text input)
+
+📍 Select destination by pin on map
+
+📍 Route Planning & Distance Calculation
+
+Once destination is selected:
+
+Display route from current location → destination
+
+Show:
+
+Total distance (km)
+
+Estimated travel time
+
+Calculate if journey is possible with current battery SOC
+
+⚡ EV Charging Station Recommendation Logic
+Automatic Stop Recommendation
+
+If:
+
+Remaining Range < Total Distance
+
+
+Then:
+
+Identify EV charging stations along the route
+
+Filter stations:
+
+Within reachable range based on current SOC
+
+Located close to the route path
+
+Automatically add charging stops in between
+
+Recalculate:
+
+Distance between each stop
+
+Battery SOC usage
+
+Charging time at each station
+
+📌 Example Logic:
+
+Battery SOC = 10%
+
+Max Mileage = 100 km
+
+Remaining Range = 10 km
+
+Journey Distance = 20 km
+→ App automatically inserts nearest EV station within first 10 km of route.
+
+➕ Manual Charging Station Selection
+
+Allow users to:
+
+View all nearby EV stations
+
+Manually add or remove charging stops
+
+Update route dynamically after manual changes
+
+🏗️ Technical Requirements
+Frontend
+
+Android (Kotlin preferred)
+
+MVVM architecture
+
+Material UI
+
+Google Maps SDK
+
+Location permissions handling
+
+Backend
+
+Firebase / REST API
+
+User authentication
+
+EV station database
+
+Vehicle profiles
+
+Route and charging logic
+
+APIs
+
+Google Maps Directions API
+
+Google Places API (EV stations)
+
+Optional: OpenChargeMap API
+
+🧮 Algorithms to Implement
+
+Battery range estimation
+
+Route segmentation
+
+Nearest charging station search
+
+Dynamic re-routing after charging stops
+
+SOC recalculation after each segment
+
+🎯 Expected Output
+
+Provide:
+
+App architecture diagram
+
+UI wireframes description
+
+Database schema
+
+API flow
+
+Route & EV station recommendation algorithm
+
+Sample Kotlin code snippets
+
+Edge case handling (low battery, no stations found, etc.)
