@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React from 'react';
-import Colors from '@/constants/colors';
+import Colors from '../../constants/colors';
 
 function NativeTabLayout() {
   return (

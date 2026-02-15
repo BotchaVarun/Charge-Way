@@ -15,9 +15,9 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useAuth } from '@/lib/auth-context';
-import { EV_MODELS, EVModel } from '@/constants/vehicles';
+import Colors from '../../constants/colors';
+import { useAuth } from '../../lib/auth-context';
+import { EV_MODELS, EVModel } from '../../constants/vehicles';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();

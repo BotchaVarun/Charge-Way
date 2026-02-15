@@ -16,9 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import Colors from '@/constants/colors';
-import { useAuth } from '@/lib/auth-context';
-import { EV_MODELS, EVModel } from '@/constants/vehicles';
+import Colors from '../../constants/colors';
+import { useAuth } from '../../lib/auth-context';
+import { EV_MODELS, EVModel } from '../../constants/vehicles';
 
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
@@ -353,7 +353,7 @@ export default function SignupScreen() {
                       style={[
                         styles.modelName,
                         selectedModel?.name === item.name &&
-                          styles.modelNameSelected,
+                        styles.modelNameSelected,
                       ]}
                     >
                       {item.name}

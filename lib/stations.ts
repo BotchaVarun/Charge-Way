@@ -1,4 +1,4 @@
-import { EVStation } from '@/types';
+import { EVStation } from '../types';
 
 const staticStations: EVStation[] = [
   { id: '1', name: 'Tata Power EV Charging Station', state: 'Maharashtra', city: 'Mumbai', address: 'Andheri East, Mumbai', latitude: 19.1136, longitude: 72.8697, type: 'DC Fast Charger' },
@@ -66,9 +66,27 @@ function seedRandom(seed: number): () => number {
 
 function generateStations(count: number): EVStation[] {
   const rand = seedRandom(42);
-  const stations: EVStation[] = [...staticStations];
+  // Do NOT include staticStations here, as they are already in allStations
+  const stations: EVStation[] = [];
 
-  for (let i = staticStations.length; i < count; i++) {
+  // We start ID generation after the static count to avoid collision if we were using static IDs,
+  // but static IDs are "1", "2" etc. and generated are "gen_X".
+  // Let's keep the logic of generating `count` *new* stations.
+  // The original logic was generating up to `count` total stations including static.
+  // If we passed 50, and static was 30, it generated 20 new ones.
+  // Let's change it to generate exactly `count` new stations for clarity, 
+  // OR respect the original intent if `count` meant "total random stations to add".
+
+  // Usage is: ...generateStations(50). 
+  // Previously: ...generateStations(120) gave 120 total (30 static + 90 new).
+  // Current usage: ...generateStations(50) gives 50 total (30 static + 20 new).
+  // BUT we spread staticStations separately: [...static, ...imported, ...generateStations(50)].
+  // So we ended up with: static (30) + imported + static(30) + new(20). 
+
+  // We want: static + imported + new.
+  // So generateStations should just return `count` NEW stations.
+
+  for (let i = 0; i < count; i++) {
     const cityInfo = cities[Math.floor(rand() * cities.length)];
     const provider = providers[Math.floor(rand() * providers.length)];
     const type = types[Math.floor(rand() * types.length)];
@@ -78,7 +96,7 @@ function generateStations(count: number): EVStation[] {
       name: `${provider} Station`,
       state: cityInfo.state,
       city: cityInfo.city,
-      address: `${cityInfo.city} Location ${i - staticStations.length + 1}`,
+      address: `${cityInfo.city} Location ${i + 1}`,
       latitude: cityInfo.lat + (rand() - 0.5) * 0.25,
       longitude: cityInfo.lng + (rand() - 0.5) * 0.25,
       type,
@@ -88,4 +106,10 @@ function generateStations(count: number): EVStation[] {
   return stations;
 }
 
-export const allStations: EVStation[] = generateStations(120);
+import { importedStations } from './ev_stations_data';
+
+export const allStations: EVStation[] = [
+  ...staticStations,
+  ...importedStations,
+  ...generateStations(50) // Reduce generated count as we have real data now
+];

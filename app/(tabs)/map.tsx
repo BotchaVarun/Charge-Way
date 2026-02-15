@@ -14,10 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import MapView, { Marker, Polyline } from '@/components/MapViewWrapper';
-import Colors from '@/constants/colors';
-import { useAuth } from '@/lib/auth-context';
-import { allStations } from '@/lib/stations';
+import MapView, { Marker, Polyline } from '../../components/MapViewWrapper';
+import Colors from '../../constants/colors';
+import { useAuth } from '../../lib/auth-context';
+import { allStations } from '../../lib/stations';
 import {
   geocodeSearch,
   getRoute,
@@ -26,8 +26,8 @@ import {
   formatDistance,
   formatDuration,
   haversineDistance,
-} from '@/lib/routing';
-import { EVStation, SearchResult, TripPlan } from '@/types';
+} from '../../lib/routing';
+import { EVStation, SearchResult, TripPlan } from '../../types';
 
 function isDCType(type: string): boolean {
   const t = type.toLowerCase();
@@ -133,12 +133,16 @@ export default function MapScreen() {
       const chargingStops = canComplete
         ? []
         : planChargingStops(
-            routeData.distance,
-            soc,
-            user.maxMileage,
-            allStations,
-            routeData.coordinates
-          );
+          routeData.distance,
+          soc,
+          user.maxMileage,
+          allStations,
+          routeData.coordinates
+        );
+
+      const totalChargingTime = chargingStops.reduce((acc, stop) => acc + stop.chargingTimeMinutes, 0);
+      const totalWaitTime = chargingStops.reduce((acc, stop) => acc + stop.waitTimeMinutes, 0);
+      const totalDuration = routeData.duration + totalChargingTime + totalWaitTime;
 
       setTripPlan({
         destination: {
@@ -147,7 +151,8 @@ export default function MapScreen() {
           longitude: dest.longitude,
         },
         totalDistance: routeData.distance,
-        totalDuration: routeData.duration,
+        totalDuration,
+        totalWaitTime,
         canComplete,
         chargingStops,
         routeCoordinates: routeData.coordinates,
@@ -203,11 +208,11 @@ export default function MapScreen() {
           location
             ? { ...location, latitudeDelta: 0.15, longitudeDelta: 0.15 }
             : {
-                latitude: 20.5937,
-                longitude: 78.9629,
-                latitudeDelta: 25,
-                longitudeDelta: 25,
-              }
+              latitude: 20.5937,
+              longitude: 78.9629,
+              latitudeDelta: 25,
+              longitudeDelta: 25,
+            }
         }
         showsUserLocation
         showsMyLocationButton={false}
@@ -334,8 +339,8 @@ export default function MapScreen() {
               (tripPlan
                 ? 290
                 : selectedStation
-                ? 200
-                : bottomPad + 16),
+                  ? 200
+                  : bottomPad + 16),
           },
         ]}
         onPress={centerOnUser}
@@ -357,8 +362,8 @@ export default function MapScreen() {
               soc > 50
                 ? Colors.primary
                 : soc > 20
-                ? Colors.warning
-                : Colors.danger
+                  ? Colors.warning
+                  : Colors.danger
             }
           />
           <Text style={styles.rangeBadgeText}>
@@ -536,7 +541,7 @@ export default function MapScreen() {
                     </Text>
                     <Text style={styles.stopDetail}>
                       {formatDistance(stop.distanceFromStart)} from start ·{' '}
-                      {stop.chargingTimeMinutes} min charge
+                      {stop.chargingTimeMinutes} min charge + {stop.waitTimeMinutes} min wait
                     </Text>
                     <Text style={styles.stopSoc}>
                       Arrive {stop.socOnArrival}% → Leave{' '}

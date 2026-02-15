@@ -31,6 +31,7 @@ export interface ChargingStop {
   distanceFromStart: number;
   socOnArrival: number;
   chargingTimeMinutes: number;
+  waitTimeMinutes: number;
   socAfterCharging: number;
 }
 
@@ -42,6 +43,7 @@ export interface TripPlan {
   };
   totalDistance: number;
   totalDuration: number;
+  totalWaitTime: number;
   canComplete: boolean;
   chargingStops: ChargingStop[];
   routeCoordinates: Array<{ latitude: number; longitude: number }>;

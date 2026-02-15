@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile } from '@/types';
+import { UserProfile } from '../types';
 
 const USERS_KEY = '@chargeway_users';
 const CURRENT_KEY = '@chargeway_current';

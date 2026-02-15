@@ -1,4 +1,4 @@
-import { EVStation } from '@/types';
+import { EVStation } from '../types';
 
 // Sample EV stations across India
 const staticStations: EVStation[] = [

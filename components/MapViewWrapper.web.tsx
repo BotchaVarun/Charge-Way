@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 const NullComponent = forwardRef((props: any, ref: any) => {
   return <View ref={ref} style={[StyleSheet.absoluteFill, props.style]} {...props} />;

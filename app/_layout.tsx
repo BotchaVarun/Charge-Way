@@ -11,9 +11,9 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { queryClient } from '@/lib/query-client';
-import { AuthProvider } from '@/lib/auth-context';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { queryClient } from '../lib/query-client';
+import { AuthProvider } from '../lib/auth-context';
 
 SplashScreen.preventAutoHideAsync();
 

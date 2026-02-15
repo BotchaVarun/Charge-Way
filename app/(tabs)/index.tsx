@@ -14,16 +14,16 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import Colors from '@/constants/colors';
-import { useAuth } from '@/lib/auth-context';
-import { allStations } from '@/lib/stations';
+import Colors from '../../constants/colors';
+import { useAuth } from '../../lib/auth-context';
+import { allStations } from '../../lib/stations';
 import {
   calculateRemainingRange,
   estimateChargeTime,
   haversineDistance,
   formatDistance,
-} from '@/lib/routing';
-import { EVStation } from '@/types';
+} from '../../lib/routing';
+import { EVStation } from '../../types';
 
 function BatteryGauge({ soc, size = 180 }: { soc: number; size?: number }) {
   const strokeWidth = 14;
@@ -268,8 +268,8 @@ export default function DashboardScreen() {
                     soc > 50
                       ? Colors.primary
                       : soc > 20
-                      ? Colors.warning
-                      : Colors.danger,
+                        ? Colors.warning
+                        : Colors.danger,
                 },
               ]}
             />
@@ -368,9 +368,9 @@ export default function DashboardScreen() {
           {nearbyStations.map((station) => {
             const dist = userLocation
               ? haversineDistance(userLocation, {
-                  latitude: station.latitude,
-                  longitude: station.longitude,
-                })
+                latitude: station.latitude,
+                longitude: station.longitude,
+              })
               : 0;
             return (
               <StationCard
