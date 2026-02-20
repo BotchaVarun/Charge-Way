@@ -11,7 +11,7 @@
     "server:build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.mjs",
     "server:prod": "cross-env NODE_ENV=production node dist/index.mjs",
     "db:push": "drizzle-kit push",
-    "build": "npm run server:build",
+    "build": "node scripts/build.js && npm run server:build",
     "start": "node dist/index.mjs",
     "dev": "npx expo start",
     "lint": "npx expo lint",
