@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: geo-station-finder-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_DOMAIN
+        sync: false

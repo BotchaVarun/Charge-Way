@@ -8,12 +8,15 @@
     "server:dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "expo:start:static:build": "npx expo start --no-dev --minify --localhost",
     "expo:static:build": "node scripts/build.js",
-    "server:build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server_dist",
-    "server:prod": "cross-env NODE_ENV=production node server_dist/index.js",
+    "server:build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "server:prod": "cross-env NODE_ENV=production node dist/index.js",
     "db:push": "drizzle-kit push",
-    "start": "npx expo start",
+    "build": "npm run server:build",
+    "start": "node dist/index.js",
+    "dev": "npx expo start",
     "lint": "npx expo lint",
-    "lint:fix": "npx expo lint --fix"
+    "lint:fix": "npx expo lint --fix",
+    "dev:tunnel": "node scripts/start-tunnel.js"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

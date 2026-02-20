@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
+import { CrowdHeatmap } from '../../components/CrowdHeatmap';
+import { useCrowdDensity } from '../../hooks/useCrowdDensity';
 import MapView, { Marker, Polyline } from '../../components/MapViewWrapper';
 import Colors from '../../constants/colors';
 import { useAuth } from '../../lib/auth-context';
@@ -43,6 +45,8 @@ export default function MapScreen() {
     latitude: number;
     longitude: number;
   } | null>(null);
+
+  const { stationStatuses } = useCrowdDensity(allStations, location, user?.id);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -222,20 +226,33 @@ export default function MapScreen() {
           if (selectedStation) setSelectedStation(null);
         }}
       >
-        {allStations.map((station) => (
-          <Marker
-            key={station.id}
-            coordinate={{
-              latitude: station.latitude,
-              longitude: station.longitude,
-            }}
-            pinColor={isDCType(station.type) ? Colors.dcFast : Colors.acCharger}
-            onPress={() => {
-              setSelectedStation(station);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-          />
-        ))}
+        <CrowdHeatmap />
+
+        {allStations.map((station) => {
+          const status = stationStatuses[station.id];
+          const isCrowded = status?.densityLevel === 'HIGH' || status?.densityLevel === 'CRITICAL';
+
+          return (
+            <Marker
+              key={station.id}
+              coordinate={{
+                latitude: station.latitude,
+                longitude: station.longitude,
+              }}
+              pinColor={isCrowded ? Colors.danger : (isDCType(station.type) ? Colors.dcFast : Colors.acCharger)}
+              title={isCrowded ? `HIGH DEMAND: ${station.name}` : station.name}
+              description={isCrowded ? `${status?.userCount} users nearby (High Wait Time)` : undefined}
+              onPress={() => {
+                setSelectedStation(station);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            >
+              {isCrowded && (
+                <View style={{ backgroundColor: 'rgba(255,0,0,0.3)', width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: 'red' }} />
+              )}
+            </Marker>
+          )
+        })}
 
         {tripPlan && tripPlan.routeCoordinates.length > 1 && (
           <Polyline

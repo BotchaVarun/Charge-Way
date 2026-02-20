@@ -34,7 +34,10 @@ function setupCors(app: express.Application) {
       origin?.startsWith("http://localhost:") ||
       origin?.startsWith("http://127.0.0.1:");
 
-    if (origin && (origins.has(origin) || isLocalhost)) {
+    const isNgrok = origin?.endsWith(".ngrok-free.app");
+    const isLocalTunnel = origin?.endsWith(".loca.lt");
+
+    if (origin && (origins.has(origin) || isLocalhost || isNgrok || isLocalTunnel)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",

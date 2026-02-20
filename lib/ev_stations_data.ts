@@ -14954,11 +14954,11 @@ export const importedStations: EVStation[] = [
   {
     "id": "csv_1496",
     "name": "Tata Power",
-    "state": "Andaman",
-    "city": "Port Blair",
+    "state": "Andhrapradesh",
+    "city": "Visakhapatnam",
     "address": "Gennext Motors , Pahargaon, Ground Floor New, Pahargaon, Port Blair, Andaman and Nicobar Islands 744103",
-    "latitude": 11.630305,
-    "longitude": 92.724835,
+    "latitude": 17.825753,
+    "longitude": 83.352351,
     "type": "AC Charger"
   },
   {
