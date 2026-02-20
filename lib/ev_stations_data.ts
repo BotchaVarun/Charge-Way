@@ -15307,8 +15307,8 @@ export const importedStations: EVStation[] = [
     "state": "Haryana",
     "city": "Gurgaon",
     "address": "Zedex TATA, Sec 48, GF-26, NIHO Scottish Mall, Sector 48, P.S. - Badshahpur, District - Gurugram 122001",
-    "latitude": 28.411072,
-    "longitude": 77.040546,
+    "latitude": 17.700701,
+    "longitude": 83.299162,
     "type": "AC Charger"
   },
   {
