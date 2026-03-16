@@ -254,19 +254,18 @@ export function planChargingStops(
     const scoredCandidates = validCandidates.map(s => {
       const status = stationStatuses[s.station.id];
       const density = status?.densityLevel || 'LOW';
-      const slots = status?.userCount === undefined ? 5 : Math.max(0, 5 - status.userCount);
+      const userCount = status?.userCount || 0;
       
       // Demand Levels: LOW (0) -> MEDIUM (1) -> HIGH (2) -> CRITICAL (3)
       const demandScore = density === 'CRITICAL' ? 3 : (density === 'HIGH' ? 2 : (density === 'MEDIUM' ? 1 : 0));
       
-      return { ...s, demand: density, demandScore, slots };
+      return { ...s, demand: density, demandScore, userCount };
     });
 
     // STEP 4: Sorting Priority (MANDATORY FIX)
-    // Sort valid candidates by: demand level, available slots, distance from user, distance from route
+    // Sort valid candidates by: demand level, distance from user, distance from route
     scoredCandidates.sort((a, b) => {
       if (a.demandScore !== b.demandScore) return a.demandScore - b.demandScore;
-      if (b.slots !== a.slots) return b.slots - a.slots;
       
       const distA = a.distanceAlongRoute - distanceCovered;
       const distB = b.distanceAlongRoute - distanceCovered;
@@ -275,13 +274,13 @@ export function planChargingStops(
       return a.distanceToRoute - b.distanceToRoute;
     });
 
-    console.log("[INFO] Sorted By Demand > Slots > Distance From User");
+    console.log("[INFO] Sorted By Demand (50m) > Distance From User");
 
     // Debugging logic for visibility (per user request) - Showing TOP 5 sorted candidates
     scoredCandidates.slice(0, 5).forEach((c, idx) => {
         const distFromUser = c.distanceAlongRoute - distanceCovered;
         console.log(`[CHECK] Candidate #${idx + 1}: ${c.station.name} (${c.station.id})`);
-        console.log(`  Demand: ${c.demand}, Available Slots: ${c.slots}`);
+        console.log(`  Demand: ${c.demand}, Users within 50m: ${c.userCount}`);
         console.log(`  Distance From User: ${distFromUser.toFixed(3)} km`);
         console.log(`  Distance From Route: ${c.distanceToRoute.toFixed(3)} km`);
         console.log(`  Reachable: YES, Ahead: YES`);
