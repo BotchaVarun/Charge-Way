@@ -187,7 +187,7 @@ export default function DashboardScreen() {
       .slice(0, 5);
   }, [userLocation]);
 
-  const socPresets = [10, 25, 50, 75, 100];
+  const socPresets = [1, 10, 25, 50, 75, 100];
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
   if (!user) return null;
@@ -302,7 +302,7 @@ export default function DashboardScreen() {
             <Pressable
               style={styles.socAdjustBtn}
               onPress={() => {
-                setSoc(Math.max(0, soc - 5));
+                setSoc(Math.max(0, soc - 1));
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
@@ -312,7 +312,7 @@ export default function DashboardScreen() {
             <Pressable
               style={styles.socAdjustBtn}
               onPress={() => {
-                setSoc(Math.min(100, soc + 5));
+                setSoc(Math.min(100, soc + 1));
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
