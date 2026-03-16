@@ -202,8 +202,8 @@ export function planChargingStops(
   let socCalc = currentSOC;
   let iterations = 0;
 
-  const RADIUS_ON_ROUTE = 1.0;
-  const RADIUS_CORRIDOR = 2.0;
+  let cumulativeMinutes = 0;
+  const avgSpeedKmPerMin = 1.0; // 60 km/h average
 
   while (distanceCovered + currentRange < totalDistance && iterations < 20) {
     iterations++;
@@ -227,7 +227,6 @@ export function planChargingStops(
       break;
     }
 
-    // STEP 2: Route Proximity Hierarchical Filtering
     const RADIUS_ON_ROUTE = 1.0;
     const RADIUS_CORRIDOR = 2.5;
 
@@ -244,33 +243,25 @@ export function planChargingStops(
       validCandidates = tier2;
       priorityTier = "Priority 2 (Corridor)";
     } else {
-      validCandidates = reachable; // Priority 3 (Fallback)
+      validCandidates = reachable;
       priorityTier = "Priority 3 (Fallback)";
     }
 
     console.log(`[INFO] Valid Stations Count: ${validCandidates.length} (${priorityTier})`);
 
-    // Map candidates with their statuses for sorting
     const scoredCandidates = validCandidates.map(s => {
       const status = stationStatuses[s.station.id];
       const density = status?.densityLevel || 'LOW';
       const userCount = status?.userCount || 0;
-      
-      // Demand Levels: LOW (0) -> MEDIUM (1) -> HIGH (2) -> CRITICAL (3)
       const demandScore = density === 'CRITICAL' ? 3 : (density === 'HIGH' ? 2 : (density === 'MEDIUM' ? 1 : 0));
-      
       return { ...s, demand: density, demandScore, userCount };
     });
 
-    // STEP 4: Sorting Priority (MANDATORY FIX)
-    // Sort valid candidates by: demand level, distance from user, distance from route
     scoredCandidates.sort((a, b) => {
       if (a.demandScore !== b.demandScore) return a.demandScore - b.demandScore;
-      
       const distA = a.distanceAlongRoute - distanceCovered;
       const distB = b.distanceAlongRoute - distanceCovered;
       if (Math.abs(distA - distB) > 0.001) return distA - distB;
-      
       return a.distanceToRoute - b.distanceToRoute;
     });
 
@@ -290,6 +281,9 @@ export function planChargingStops(
     console.log(`[INFO] Selected First Station: ${best.station.name} (${best.station.id})`);
 
     const distToStation = best.distanceAlongRoute - distanceCovered;
+    const travelTime = Math.ceil(distToStation / avgSpeedKmPerMin);
+    const arrivalTime = cumulativeMinutes + travelTime;
+    
     const socUsed = (distToStation / maxMileage) * 100;
     const socOnArrival = Math.max(0, Math.round(socCalc - socUsed));
     const targetSOC = 80;
@@ -297,9 +291,15 @@ export function planChargingStops(
     const rate = isDCType(best.station.type) ? 1 : 4;
     const chargingTime = Math.ceil(socToCharge * rate);
     
-    // Weighted wait time based on demand
     const baseWait = best.demand === 'CRITICAL' ? 45 : (best.demand === 'HIGH' ? 25 : (best.demand === 'MEDIUM' ? 10 : 0));
     const waitTime = baseWait + Math.floor(Math.random() * 10);
+    const leavingTime = arrivalTime + waitTime + chargingTime;
+
+    console.log(`[STOP ${stops.length + 1}] ${best.station.name}`);
+    console.log(`  Arrive: ${socOnArrival}% at +${arrivalTime} min`);
+    console.log(`  Wait: ${waitTime} min (Demand: ${best.demand})`);
+    console.log(`  Charge: ${chargingTime} min (${best.station.type})`);
+    console.log(`  Leave: at +${leavingTime} min`);
 
     stops.push({
       station: best.station,
@@ -308,11 +308,14 @@ export function planChargingStops(
       chargingTimeMinutes: chargingTime,
       waitTimeMinutes: waitTime,
       socAfterCharging: targetSOC,
+      arrivalTimeMinutes: arrivalTime,
+      leavingTimeMinutes: leavingTime,
     });
 
     distanceCovered = best.distanceAlongRoute;
     socCalc = targetSOC;
     currentRange = (socCalc / 100) * maxMileage;
+    cumulativeMinutes = leavingTime;
   }
 
   if (stops.length > 0) {

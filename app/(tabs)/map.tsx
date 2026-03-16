@@ -562,8 +562,7 @@ export default function MapScreen() {
                       {stop.chargingTimeMinutes} min charge + {stop.waitTimeMinutes} min wait
                     </Text>
                     <Text style={styles.stopSoc}>
-                      Arrive {stop.socOnArrival}% → Leave{' '}
-                      {stop.socAfterCharging}%
+                      Arrive {stop.socOnArrival}% (+{stop.arrivalTimeMinutes}m) → Leave {stop.socAfterCharging}% (+{stop.leavingTimeMinutes}m)
                     </Text>
                   </View>
                 </View>

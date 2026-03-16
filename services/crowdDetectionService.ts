@@ -32,8 +32,8 @@ export interface StationCrowdStatus {
 // Configuration
 const CROWD_RADIUS_KM = 0.05; // 50m radius for station crowd (Strict User Request)
 const USER_TIMEOUT_MS = 1 * 60 * 1000; // 1 minute inactivity timeout
-const HIGH_DENSITY_THRESHOLD = 1; // 1 or more users within 50m is HIGH
-const CRITICAL_DENSITY_THRESHOLD = 3; // 3 or more users within 50m is CRITICAL
+const HIGH_DENSITY_THRESHOLD = 2; // 2 or more users within 50m is HIGH (Updated per request)
+const CRITICAL_DENSITY_THRESHOLD = 5; // 5 or more users within 50m is CRITICAL
 
 // State
 let activeUsers: { id: string; lat: number; lng: number; lastUpdated: number }[] = [];

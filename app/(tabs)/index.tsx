@@ -53,41 +53,53 @@ function BatteryGauge({ soc, size = 180 }: { soc: number; size?: number }) {
     soc > 50 ? Colors.primary : soc > 20 ? Colors.warning : Colors.danger;
 
   return (
-    <Svg width={size} height={size}>
-      <Path
-        d={describeArc(startAngle, totalSweep)}
-        fill="none"
-        stroke={Colors.border}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-      <Path
-        d={describeArc(startAngle, fillSweep)}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-      <SvgText
-        x={cx}
-        y={cy - 4}
-        textAnchor="middle"
-        fontSize={42}
-        fontWeight="700"
-        fill={Colors.text}
-      >
-        {soc}%
-      </SvgText>
-      <SvgText
-        x={cx}
-        y={cy + 22}
-        textAnchor="middle"
-        fontSize={13}
-        fill={Colors.textSecondary}
-      >
-        Battery
-      </SvgText>
-    </Svg>
+    <View style={styles.gaugeOuterContainer}>
+      <Svg width={size} height={size} style={styles.gaugeSvg}>
+        {/* Glow Layer */}
+        <Path
+          d={describeArc(startAngle, fillSweep)}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth + 4}
+          strokeLinecap="round"
+          opacity={0.15}
+        />
+        <Path
+          d={describeArc(startAngle, totalSweep)}
+          fill="none"
+          stroke={Colors.border}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+        <Path
+          d={describeArc(startAngle, fillSweep)}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+        <SvgText
+          x={cx}
+          y={cy - 4}
+          textAnchor="middle"
+          fontSize={44}
+          fontFamily="Inter_700Bold"
+          fill={Colors.text}
+        >
+          {soc}%
+        </SvgText>
+        <SvgText
+          x={cx}
+          y={cy + 24}
+          textAnchor="middle"
+          fontSize={14}
+          fontFamily="Inter_500Medium"
+          fill={Colors.textSecondary}
+        >
+          Remaining
+        </SvgText>
+      </Svg>
+    </View>
   );
 }
 
@@ -226,71 +238,84 @@ export default function DashboardScreen() {
           end={{ x: 1, y: 1 }}
         >
           <View style={styles.gaugeContainer}>
-            <BatteryGauge soc={soc} size={180} />
+            <BatteryGauge soc={soc} size={200} />
           </View>
           <View style={styles.rangeRow}>
             <View style={styles.rangeItem}>
-              <MaterialCommunityIcons
-                name="road-variant"
-                size={18}
-                color={Colors.primary}
-              />
+              <View style={[styles.rangeIcon, { backgroundColor: Colors.primaryMuted }]}>
+                <MaterialCommunityIcons name="road-variant" size={20} color={Colors.primary} />
+              </View>
               <Text style={styles.rangeValue}>{remainingRange} km</Text>
-              <Text style={styles.rangeLabel}>Est. Range</Text>
+              <Text style={styles.rangeLabel}>Distance Left</Text>
             </View>
             <View style={styles.rangeDivider} />
             <View style={styles.rangeItem}>
-              <Ionicons name="time-outline" size={18} color={Colors.secondary} />
+              <View style={[styles.rangeIcon, { backgroundColor: Colors.secondaryMuted }]}>
+                <Ionicons name="time-outline" size={20} color={Colors.secondary} />
+              </View>
               <Text style={styles.rangeValue}>
                 {chargeTime > 60
                   ? `${Math.floor(chargeTime / 60)}h ${chargeTime % 60}m`
                   : `${chargeTime} min`}
               </Text>
-              <Text style={styles.rangeLabel}>To Full (DC)</Text>
+              <Text style={styles.rangeLabel}>To 100% (DC)</Text>
             </View>
           </View>
         </LinearGradient>
 
         <View style={styles.socSection}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.03)', 'transparent']}
+            style={styles.socGlassOverlay}
+          />
           <View style={styles.socHeader}>
-            <Text style={styles.sectionTitle}>Adjust Battery Level</Text>
-            <View style={styles.socBadge}>
-              <Text style={styles.socBadgeText}>{soc}%</Text>
+            <View>
+              <Text style={styles.sectionTitle}>Charging Control Center</Text>
+              <Text style={styles.sectionSubtitle}>Select desired charge level</Text>
+            </View>
+            <View style={[
+              styles.socPercentageBadge, 
+              { backgroundColor: soc > 50 ? Colors.primaryMuted : soc > 20 ? Colors.warningMuted : Colors.dangerMuted }
+            ]}>
+              <Text style={[
+                styles.socPercentageText,
+                { color: soc > 50 ? Colors.primary : soc > 20 ? Colors.warning : Colors.danger }
+              ]}>{soc}%</Text>
             </View>
           </View>
-          <View style={styles.socBar}>
-            <View
-              style={[
-                styles.socFill,
-                {
-                  width: `${soc}%`,
-                  backgroundColor:
-                    soc > 50
-                      ? Colors.primary
-                      : soc > 20
-                        ? Colors.warning
-                        : Colors.danger,
-                },
-              ]}
-            />
+
+          <View style={styles.socBarTrack}>
+            <LinearGradient
+              colors={
+                soc > 50 ? ['#00E676', '#00C853'] : 
+                soc > 20 ? ['#FFD740', '#FFAB00'] : 
+                ['#FF5252', '#D50000']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.socBarFill, { width: `${soc}%` }]}
+            >
+              <View style={styles.socBarGlow} />
+            </LinearGradient>
           </View>
-          <View style={styles.socPresets}>
+
+          <View style={styles.socPresetsRow}>
             {socPresets.map((val) => (
               <Pressable
                 key={val}
                 style={[
-                  styles.socPresetBtn,
+                  styles.socPresetItem,
                   soc === val && styles.socPresetActive,
                 ]}
                 onPress={() => {
                   setSoc(val);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 }}
               >
                 <Text
                   style={[
-                    styles.socPresetText,
-                    soc === val && styles.socPresetTextActive,
+                    styles.socPresetLabel,
+                    soc === val && styles.socPresetLabelActive,
                   ]}
                 >
                   {val}%
@@ -298,25 +323,31 @@ export default function DashboardScreen() {
               </Pressable>
             ))}
           </View>
-          <View style={styles.socAdjust}>
+
+          <View style={styles.socControlRow}>
             <Pressable
-              style={styles.socAdjustBtn}
+              style={styles.socControlBtn}
               onPress={() => {
                 setSoc(Math.max(0, soc - 1));
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              <Ionicons name="remove" size={22} color={Colors.text} />
+              <Ionicons name="remove" size={24} color={Colors.text} />
             </Pressable>
-            <Text style={styles.socAdjustLabel}>Fine tune</Text>
+            
+            <View style={styles.socControlInfo}>
+              <Text style={styles.socControlMain}>{soc}%</Text>
+              <Text style={styles.socControlSub}>Fine Adjustment</Text>
+            </View>
+
             <Pressable
-              style={styles.socAdjustBtn}
+              style={styles.socControlBtn}
               onPress={() => {
                 setSoc(Math.min(100, soc + 1));
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              <Ionicons name="add" size={22} color={Colors.text} />
+              <Ionicons name="add" size={24} color={Colors.text} />
             </Pressable>
           </View>
         </View>
@@ -432,85 +463,137 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  gaugeOuterContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    marginBottom: 10,
+  },
+  gaugeSvg: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#00E676',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.15,
+        shadowRadius: 15,
+      },
+    }),
+  },
   gaugeContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   rangeRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 24,
+    paddingHorizontal: 10,
   },
   rangeItem: {
+    flex: 1,
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+  },
+  rangeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   rangeValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: 'Inter_700Bold',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   rangeLabel: {
     fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    color: Colors.textMuted,
+    fontFamily: 'Inter_500Medium',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   rangeDivider: {
     width: 1,
-    height: 40,
+    height: 30,
     backgroundColor: Colors.border,
+    opacity: 0.5,
   },
   socSection: {
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  socGlassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
   },
   socHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    color: Colors.text,
-  },
-  socBadge: {
-    backgroundColor: Colors.primaryMuted,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  socBadgeText: {
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: 'Inter_700Bold',
-    color: Colors.primary,
+    color: Colors.text,
+    letterSpacing: -0.3,
   },
-  socBar: {
-    height: 8,
+  sectionSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  socPercentageBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  socPercentageText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+  },
+  socBarTrack: {
+    height: 12,
     backgroundColor: Colors.border,
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 28,
   },
-  socFill: {
+  socBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
-  socPresets: {
+  socBarGlow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 20,
+    height: '100%',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 10,
+  },
+  socPresetsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 28,
   },
-  socPresetBtn: {
+  socPresetItem: {
     flex: 1,
-    height: 36,
-    borderRadius: 8,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: Colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -518,37 +601,57 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   socPresetActive: {
-    backgroundColor: Colors.primaryMuted,
+    backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  socPresetText: {
-    fontSize: 13,
+  socPresetLabel: {
+    fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     color: Colors.textSecondary,
   },
-  socPresetTextActive: {
-    color: Colors.primary,
+  socPresetLabelActive: {
+    color: '#0A0E14',
   },
-  socAdjust: {
+  socControlRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
+    justifyContent: 'space-between',
+    paddingVertical: 10,
   },
-  socAdjustBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  socControlBtn: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: Colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  socAdjustLabel: {
-    fontSize: 13,
+  socControlInfo: {
+    alignItems: 'center',
+  },
+  socControlMain: {
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+    color: Colors.text,
+  },
+  socControlSub: {
+    fontSize: 12,
     fontFamily: 'Inter_400Regular',
     color: Colors.textMuted,
+    marginTop: 2,
   },
   statsRow: {
     flexDirection: 'row',

@@ -33,6 +33,8 @@ export interface ChargingStop {
   chargingTimeMinutes: number;
   waitTimeMinutes: number;
   socAfterCharging: number;
+  arrivalTimeMinutes: number;
+  leavingTimeMinutes: number;
 }
 
 export interface TripPlan {
