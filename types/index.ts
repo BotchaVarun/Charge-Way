@@ -48,3 +48,12 @@ export interface TripPlan {
   chargingStops: ChargingStop[];
   routeCoordinates: Array<{ latitude: number; longitude: number }>;
 }
+
+export type CrowdDensityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface StationCrowdStatus {
+  stationId: string;
+  densityLevel: CrowdDensityLevel;
+  userCount: number;
+  trend: 'STABLE' | 'INCREASING' | 'DECREASING';
+}

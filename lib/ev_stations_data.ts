@@ -14956,7 +14956,7 @@ export const importedStations: EVStation[] = [
     "name": "Tata Power",
     "state": "Andhrapradesh",
     "city": "Visakhapatnam",
-    "address": "Gennext Motors , Pahargaon, Ground Floor New, Pahargaon, Port Blair, Andaman and Nicobar Islands 744103",
+    "address": "Renuka Residency",
     "latitude": 17.825753,
     "longitude": 83.352351,
     "type": "AC Charger"
@@ -15033,12 +15033,12 @@ export const importedStations: EVStation[] = [
   },
   {
     "id": "csv_1504",
-    "name": "Tata Power",
-    "state": "Delhi",
-    "city": "Delhi",
-    "address": "MVID MCD Hospital, Mukherjee Nagar, MVID MCD Hospital Parking, Tagore Park Extension, Mukherjee Nagar, Delhi, 110009",
-    "latitude": 28.7036992,
-    "longitude": 77.2044734,
+    "name": "Birla Power",
+    "state": "Andhrapradesh",
+    "city": "Visakhapatnam",
+    "address": "Kommadi Busstop, Visakhapatnam, Andhra Pradesh 530001",
+    "latitude": 17.824561,
+    "longitude": 83.352266,
     "type": "AC Charger"
   },
   {

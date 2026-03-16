@@ -141,7 +141,8 @@ export default function MapScreen() {
           soc,
           user.maxMileage,
           allStations,
-          routeData.coordinates
+          routeData.coordinates,
+          stationStatuses
         );
 
       const totalChargingTime = chargingStops.reduce((acc, stop) => acc + stop.chargingTimeMinutes, 0);

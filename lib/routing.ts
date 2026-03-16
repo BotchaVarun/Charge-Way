@@ -1,4 +1,4 @@
-import { EVStation, SearchResult, ChargingStop } from '../types';
+import { EVStation, SearchResult, ChargingStop, StationCrowdStatus, CrowdDensityLevel } from '../types';
 
 function toRad(deg: number): number {
   return deg * (Math.PI / 180);
@@ -66,45 +66,57 @@ export async function getRoute(
 
 
 // Helper to find squared distance from point p to line segment vw
+// Helper to find squared distance from point p to line segment vw using longitude scaling for accuracy
 function distToSegmentSquared(p: { latitude: number; longitude: number; }, v: { latitude: number; longitude: number; }, w: { latitude: number; longitude: number; }): number {
-  const l2 = (v.latitude - w.latitude) ** 2 + (v.longitude - w.longitude) ** 2;
-  if (l2 === 0) return (p.latitude - v.latitude) ** 2 + (p.longitude - v.longitude) ** 2;
-  let t = ((p.latitude - v.latitude) * (w.latitude - v.latitude) + (p.longitude - v.longitude) * (w.longitude - v.longitude)) / l2;
+  const lonScale = Math.cos(toRad(p.latitude));
+  const dx = (w.longitude - v.longitude) * lonScale;
+  const dy = w.latitude - v.latitude;
+  const l2 = dx * dx + dy * dy;
+
+  if (l2 === 0) {
+    const p_dx = (p.longitude - v.longitude) * lonScale;
+    const p_dy = p.latitude - v.latitude;
+    return p_dx * p_dx + p_dy * p_dy;
+  }
+
+  const p_dx = (p.longitude - v.longitude) * lonScale;
+  const p_dy = p.latitude - v.latitude;
+  let t = (p_dx * dx + p_dy * dy) / l2;
   t = Math.max(0, Math.min(1, t));
-  return (p.latitude - (v.latitude + t * (w.latitude - v.latitude))) ** 2 +
-    (p.longitude - (v.longitude + t * (w.longitude - v.longitude))) ** 2;
+
+  const closest_dx = p_dx - t * dx;
+  const closest_dy = p_dy - t * dy;
+  return closest_dx * closest_dx + closest_dy * closest_dy;
 }
 
 // Helper to find shortest distance from point to a polyline
-function distToPolyline(p: { latitude: number; longitude: number; }, coords: Array<{ latitude: number; longitude: number; }>): { distance: number, index: number } {
+// Returns precise distance and the absolute distance along the route to that point
+function distToPolyline(
+  p: { latitude: number; longitude: number },
+  coords: Array<{ latitude: number; longitude: number }>,
+  cumDist: number[]
+): { distance: number; distanceAlongRoute: number } {
   let minDistSq = Infinity;
-  let index = 0;
-
-  // Checking every single segment might be too slow for very long routes (thousands of points)
-  // Optimization: Sample every 10th point first to find a rough area, then check closely?
-  // Or just iterate given typical route sizes aren't massive for this app context. 
-  // OSRM full geometry can be large. Let's use a step of 5 for coarse check, then refine?
-  // Actually, for accuracy, let's just use all segments but optimize by simple bounding box check first if needed.
-  // For now, simple iteration.
+  let segmentIndex = 0;
 
   for (let i = 0; i < coords.length - 1; i++) {
     const dSq = distToSegmentSquared(p, coords[i], coords[i + 1]);
     if (dSq < minDistSq) {
       minDistSq = dSq;
-      index = i;
+      segmentIndex = i;
     }
   }
 
-  // Convert lat/lon squared diff to roughly km (approximation)
-  // 1 deg lat ~ 111km. 1 deg lon ~ 111km * cos(lat)
-  // This is a rough heuristic. For precise result, take the closest point on segment and use haversine.
-  // But since we just need relative sorting and threshold, simpler is better.
-  // Let's get the closest point on the segment `index` and calculate Haversine to it.
-
-  const v = coords[index];
-  const w = coords[index + 1];
+  const v = coords[segmentIndex];
+  const w = coords[segmentIndex + 1];
   const l2 = (v.latitude - w.latitude) ** 2 + (v.longitude - w.longitude) ** 2;
-  if (l2 === 0) return { distance: haversineDistance(p, v), index };
+
+  if (l2 === 0) {
+    return {
+      distance: haversineDistance(p, v),
+      distanceAlongRoute: cumDist[segmentIndex]
+    };
+  }
 
   let t = ((p.latitude - v.latitude) * (w.latitude - v.latitude) + (p.longitude - v.longitude) * (w.longitude - v.longitude)) / l2;
   t = Math.max(0, Math.min(1, t));
@@ -114,19 +126,22 @@ function distToPolyline(p: { latitude: number; longitude: number; }, coords: Arr
     longitude: v.longitude + t * (w.longitude - v.longitude)
   };
 
-  return { distance: haversineDistance(p, closestPoint), index };
+  const distToClosestOnSegment = haversineDistance(v, closestPoint);
+  return {
+    distance: haversineDistance(p, closestPoint),
+    distanceAlongRoute: cumDist[segmentIndex] + distToClosestOnSegment
+  };
 }
 
 export function findStationsAlongRoute(
   stations: EVStation[],
   routeCoords: Array<{ latitude: number; longitude: number }>,
-  maxDistanceKm: number = 1
+  maxDistanceKm: number = 5 // Increased default to encompass fallback limit
 ): Array<{
   station: EVStation;
   distanceToRoute: number;
   distanceAlongRoute: number;
 }> {
-  // Pre-calculate cumulative distance for the route to map "distance along route"
   const cumDist: number[] = [0];
   for (let i = 1; i < routeCoords.length; i++) {
     cumDist.push(cumDist[i - 1] + haversineDistance(routeCoords[i - 1], routeCoords[i]));
@@ -134,16 +149,16 @@ export function findStationsAlongRoute(
 
   return stations
     .map((station) => {
-      // Find the true shortest distance to the route polyline
-      const { distance, index } = distToPolyline(
+      const { distance, distanceAlongRoute } = distToPolyline(
         { latitude: station.latitude, longitude: station.longitude },
-        routeCoords
+        routeCoords,
+        cumDist
       );
 
       return {
         station,
         distanceToRoute: distance,
-        distanceAlongRoute: cumDist[index], // Approximation: distance to the start of the closest segment
+        distanceAlongRoute,
       };
     })
     .filter((s) => s.distanceToRoute <= maxDistanceKm)
@@ -160,14 +175,26 @@ export function planChargingStops(
   currentSOC: number,
   maxMileage: number,
   stations: EVStation[],
-  routeCoords: Array<{ latitude: number; longitude: number }>
+  routeCoords: Array<{ latitude: number; longitude: number }>,
+  stationStatuses: Record<string, StationCrowdStatus> = {}
 ): ChargingStop[] {
   const remainingRange = (currentSOC / 100) * maxMileage;
-  if (remainingRange >= totalDistance * 1.1) return [];
+  
+  console.log(`[DEBUG] Current SOC: ${currentSOC}%`);
+  console.log(`[DEBUG] Max Mileage: ${maxMileage} km`);
+  console.log(`[DEBUG] Reachable Distance = ${remainingRange.toFixed(2)} km`);
 
-  // Reduce search radius to 1km to ensure stations are strictly on/near the route
-  const nearbyStations = findStationsAlongRoute(stations, routeCoords, 1);
-  if (nearbyStations.length === 0) return [];
+  if (remainingRange >= totalDistance * 1.1) {
+    console.log("[INFO] Destination is within battery range (incl. 10% buffer). No stops needed.");
+    return [];
+  }
+
+  // Get all stations within priority ranges
+  const candidates = findStationsAlongRoute(stations, routeCoords, 5.0);
+  if (candidates.length === 0) {
+    console.log("[ERROR] No stations found within 5km of the route corridor.");
+    return [];
+  }
 
   const stops: ChargingStop[] = [];
   let currentRange = remainingRange;
@@ -175,41 +202,93 @@ export function planChargingStops(
   let socCalc = currentSOC;
   let iterations = 0;
 
+  const RADIUS_ON_ROUTE = 1.0;
+  const RADIUS_CORRIDOR = 2.0;
+
   while (distanceCovered + currentRange < totalDistance && iterations < 20) {
     iterations++;
-    const safeRange = currentRange * 0.85;
+    console.log(`\n[ITERATION ${iterations}] Position: ${distanceCovered.toFixed(2)} km, Available Range: ${currentRange.toFixed(2)} km`);
 
-    // Find all stations reachable within the safe range
-    // We prioritize stations that are further along the route (to minimize stops)
-    // BUT we also want to minimize detour distance.
-    // Strategy: Look at the furthest reachable stations (e.g., in the last 20% of the reachable window)
-    // and pick the one with the smallest distanceToRoute.
-
-    let reachable = nearbyStations.filter(
-      (s) =>
-        s.distanceAlongRoute > distanceCovered + 5 && // Ensure at least 5km travel between stops
-        s.distanceAlongRoute <= distanceCovered + safeRange
-    );
+    // STEP 1 & 3: Reachability and Ahead Filter
+    const reachable = candidates.filter(s => {
+      const distFromUser = s.distanceAlongRoute - distanceCovered;
+      
+      // Allow 0km travel for the first stop (emergency saves at origin)
+      // For subsequent stops, require at least 100m to avoid loops
+      const minTravel = iterations === 1 ? 0 : 0.1;
+      const isReachable = distFromUser <= currentRange && distFromUser >= minTravel;
+      
+      return isReachable;
+    });
 
     if (reachable.length === 0) {
-      // If no safe stops, try pushing to the absolute limit of range
-      reachable = nearbyStations.filter(
-        (s) =>
-          s.distanceAlongRoute > distanceCovered + 1 &&
-          s.distanceAlongRoute <= distanceCovered + currentRange
-      );
-      if (reachable.length === 0) break;
+      console.log(`[ERROR] No reachable EV stations found within ${currentRange.toFixed(2)} km range.`);
+      console.log("[SUGGESTION] Reduce route or arrange towing.");
+      break;
     }
 
-    // Optimization: Consider the top 3 furthest stations (or top 25% if many) 
-    // and pick the one closest to the route line.
-    const candidatesCount = Math.max(1, Math.floor(reachable.length * 0.25));
-    const candidates = reachable.slice(-Math.max(3, candidatesCount));
+    // STEP 2: Route Proximity Hierarchical Filtering
+    const RADIUS_ON_ROUTE = 1.0;
+    const RADIUS_CORRIDOR = 2.5;
 
-    // Pick the candidate with the minimum deviation from route
-    const best = candidates.reduce((prev, curr) =>
-      prev.distanceToRoute < curr.distanceToRoute ? prev : curr
-    );
+    const tier1 = reachable.filter(s => s.distanceToRoute <= RADIUS_ON_ROUTE);
+    const tier2 = reachable.filter(s => s.distanceToRoute <= RADIUS_CORRIDOR);
+    
+    let validCandidates = [];
+    let priorityTier = "";
+
+    if (tier1.length > 0) {
+      validCandidates = tier1;
+      priorityTier = "Priority 1 (On Route)";
+    } else if (tier2.length > 0) {
+      validCandidates = tier2;
+      priorityTier = "Priority 2 (Corridor)";
+    } else {
+      validCandidates = reachable; // Priority 3 (Fallback)
+      priorityTier = "Priority 3 (Fallback)";
+    }
+
+    console.log(`[INFO] Valid Stations Count: ${validCandidates.length} (${priorityTier})`);
+
+    // Map candidates with their statuses for sorting
+    const scoredCandidates = validCandidates.map(s => {
+      const status = stationStatuses[s.station.id];
+      const density = status?.densityLevel || 'LOW';
+      const slots = status?.userCount === undefined ? 5 : Math.max(0, 5 - status.userCount);
+      
+      // Demand Levels: LOW (0) -> MEDIUM (1) -> HIGH (2) -> CRITICAL (3)
+      const demandScore = density === 'CRITICAL' ? 3 : (density === 'HIGH' ? 2 : (density === 'MEDIUM' ? 1 : 0));
+      
+      return { ...s, demand: density, demandScore, slots };
+    });
+
+    // STEP 4: Sorting Priority (MANDATORY FIX)
+    // Sort valid candidates by: demand level, available slots, distance from user, distance from route
+    scoredCandidates.sort((a, b) => {
+      if (a.demandScore !== b.demandScore) return a.demandScore - b.demandScore;
+      if (b.slots !== a.slots) return b.slots - a.slots;
+      
+      const distA = a.distanceAlongRoute - distanceCovered;
+      const distB = b.distanceAlongRoute - distanceCovered;
+      if (Math.abs(distA - distB) > 0.001) return distA - distB;
+      
+      return a.distanceToRoute - b.distanceToRoute;
+    });
+
+    console.log("[INFO] Sorted By Demand > Slots > Distance From User");
+
+    // Debugging logic for visibility (per user request) - Showing TOP 5 sorted candidates
+    scoredCandidates.slice(0, 5).forEach((c, idx) => {
+        const distFromUser = c.distanceAlongRoute - distanceCovered;
+        console.log(`[CHECK] Candidate #${idx + 1}: ${c.station.name} (${c.station.id})`);
+        console.log(`  Demand: ${c.demand}, Available Slots: ${c.slots}`);
+        console.log(`  Distance From User: ${distFromUser.toFixed(3)} km`);
+        console.log(`  Distance From Route: ${c.distanceToRoute.toFixed(3)} km`);
+        console.log(`  Reachable: YES, Ahead: YES`);
+    });
+
+    const best = scoredCandidates[0];
+    console.log(`[INFO] Selected First Station: ${best.station.name} (${best.station.id})`);
 
     const distToStation = best.distanceAlongRoute - distanceCovered;
     const socUsed = (distToStation / maxMileage) * 100;
@@ -218,10 +297,10 @@ export function planChargingStops(
     const socToCharge = Math.max(0, targetSOC - socOnArrival);
     const rate = isDCType(best.station.type) ? 1 : 4;
     const chargingTime = Math.ceil(socToCharge * rate);
-
-    // Simulate waiting time (0-30 mins) based on station popularity/randomness
-    // In a real app, this would come from live data
-    const waitTime = Math.floor(Math.random() * 30);
+    
+    // Weighted wait time based on demand
+    const baseWait = best.demand === 'CRITICAL' ? 45 : (best.demand === 'HIGH' ? 25 : (best.demand === 'MEDIUM' ? 10 : 0));
+    const waitTime = baseWait + Math.floor(Math.random() * 10);
 
     stops.push({
       station: best.station,
@@ -235,6 +314,10 @@ export function planChargingStops(
     distanceCovered = best.distanceAlongRoute;
     socCalc = targetSOC;
     currentRange = (socCalc / 100) * maxMileage;
+  }
+
+  if (stops.length > 0) {
+    console.log(`\n[RESULT] Planned ${stops.length} charging stops.`);
   }
 
   return stops;
