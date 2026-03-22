@@ -62,23 +62,23 @@ export const importedStations: EVStation[] = [
     "type": "DC Fast Charger"
   },
   {
-    "id": "csv_7",
+    
     "name": "SG Jabli DC Charging Station",
-    "state": "Himachal Pradesh",
-    "city": "Kasauli",
-    "address": "VPO - Jabli, NH-22, Teh, Kasauli, Himachal Pradesh",
-    "latitude": 30.879,
-    "longitude": 76.9948,
+    "state": "andhrapradesh",
+    "city": "tagarapuvalasa",
+    "address": "anits college, tagarapuvalasa, visakhapatnam, andhrapradesh",
+    "latitude": 17.920972,
+    "longitude":  83.424789,
     "type": "DC Fast Charger"
   },
   {
     "id": "csv_8",
     "name": "SG Jabli  AC Charging Station",
-    "state": "Himachal Pradesh",
-    "city": "Kasauli",
-    "address": "VPO - Jabli, NH-22, Teh, Kasauli, Himachal Pradesh",
-    "latitude": 30.879,
-    "longitude": 76.9948,
+    "state": "Andhra Pradesh",
+    "city": "tagrapuvalasa",
+    "address": "anits tea time, tagarapuvalasa, visakhapatnam, andhrapradesh",
+    "latitude": 17.922616,
+    "longitude":  83.426223,
     "type": "AC Charger"
   },
   {
